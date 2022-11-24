@@ -10,10 +10,6 @@
 #include "cryption.hpp"
 
 static void visualize(cv::Mat& input, cv::Mat& faces, std::string text, int thickness = 2){
-    cv::Mat blur;
-    // cv::GaussianBlur(input, blur, cv::Size(175, 175), 15, 15);
-    cv::resize(input, blur, input.size()/50, 0, 0);
-    cv::resize(blur, blur, input.size(), 0, 0, cv::INTER_LINEAR);
     for (int i = 0; i < faces.rows; i++){
         cv::Rect2i face = cv::Rect2i(int(faces.at<float>(i, 0)), int(faces.at<float>(i, 1)), int(faces.at<float>(i, 2)), int(faces.at<float>(i, 3)));
         // Draw bounding box
@@ -27,20 +23,7 @@ static void visualize(cv::Mat& input, cv::Mat& faces, std::string text, int thic
         cv::circle(input, cv::Point2i(int(faces.at<float>(i, 8)), int(faces.at<float>(i, 9))), 2, cv::Scalar(0, 255, 0), thickness);
         cv::circle(input, cv::Point2i(int(faces.at<float>(i, 10)), int(faces.at<float>(i, 11))), 2, cv::Scalar(255, 0, 255), thickness);
         cv::circle(input, cv::Point2i(int(faces.at<float>(i, 12)), int(faces.at<float>(i, 13))), 2, cv::Scalar(0, 255, 255), thickness);
-        auto max = [](int x, int y) -> int {return x > y ? x : y;};
-        auto min = [](int x, int y) -> int {return x > y ? y : x;};
-        cv::Point leftup(max(0, int(faces.at<float>(i, 0) - faces.at<float>(i, 2) * 0.25)),
-                         max(0, int(faces.at<float>(i, 1) - faces.at<float>(i, 3) * 0.25)) 
-                        );
-        cv::Point rightdown(min(input.cols, int(faces.at<float>(i, 0) + faces.at<float>(i, 2) * 1.25)),
-                         min(input.rows, int(faces.at<float>(i, 1) + faces.at<float>(i, 3) * 1.25)) 
-                        );
-
-        cv::Rect2i vivid = cv::Rect2i(leftup, rightdown);
-        
-        input(vivid).copyTo(blur(vivid));
     }
-    input = blur.clone();
     cv::displayOverlay("Video", text);
 }
 
@@ -196,8 +179,7 @@ int main(int argc, char** argv){
     }
 
 
-    // else if(parser.has("video")){
-    if(parser.has("video")){
+    else if(parser.has("video")){
         std::string video = parser.get<std::string>("video");
         if (video.size() == 1 && isdigit(video[0]))
             capture.open(parser.get<int>("video"));
@@ -472,17 +454,16 @@ int main(int argc, char** argv){
         cv::imshow("Image", input_image);
         cv::moveWindow("Image", 300, 300);
 
-        // if(!inkey.empty()){
-        //     if(decrypt_mat(input_image, output_image, inkey, encinfo, mask) >= 0){
-        //         std::cout << "decrypted" << std::endl;
-        //         deckey = inkey;
-        //     }
-        //     else{
-        //         std::cerr << "failed to decrypt with key file" << std::endl;
-        //     }
-        // }
-        // else{
-        {
+        if(!inkey.empty()){
+            if(decrypt_mat(input_image, output_image, inkey, encinfo, mask) >= 0){
+                std::cout << "decrypted" << std::endl;
+                deckey = inkey;
+            }
+            else{
+                std::cerr << "failed to decrypt with key file" << std::endl;
+            }
+        }
+        else{
             cv::namedWindow("Video");
             cv::moveWindow("Video", 310 + input_image.rows, 300);
             SimHash simhash(randvec);
@@ -521,13 +502,6 @@ int main(int argc, char** argv){
                     if(decrypt_mat(input_image, output_image, key, encinfo, mask) >= 0){
                         cv::displayOverlay("Image", cv::format("%s is successfully decrypted ! Processed %d frames", encinfo.filename, nFrame), 5000);
                         deckey = key;
-                        break;
-                    }
-                    if(nFrame > 91 && !inkey.empty()){
-                        if(decrypt_mat(input_image, output_image, inkey, encinfo, mask) >= 0){
-                            cv::displayOverlay("Image", cv::format("%s is successfully decrypted ! Processed %d frames", encinfo.filename, nFrame), 5000);
-                            deckey = inkey;
-                        }
                         break;
                     }
                 }
