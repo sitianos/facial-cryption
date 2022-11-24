@@ -1,0 +1,9 @@
+*.jpg
+*.png
+*.avi
+obj/
+bin/
+samples/
+testsrc/
+.vscode
+core
